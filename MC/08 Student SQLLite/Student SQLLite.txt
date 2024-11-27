@@ -1,0 +1,241 @@
+1. MainActivity.kt 
+package com.example.studentdatabase
+
+import android.database.Cursor
+import android.os.Bundle
+import android.widget.Button
+import android.widget.EditText
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var studentDBHelper: StudentDBHelper
+    private lateinit var insertButton: Button
+    private lateinit var searchButton: Button
+    private lateinit var rollNoEditText: EditText
+    private lateinit var nameEditText: EditText
+    private lateinit var genderEditText: EditText
+    private lateinit var marks1EditText: EditText
+    private lateinit var marks2EditText: EditText
+    private lateinit var marks3EditText: EditText
+    private lateinit var searchNameEditText: EditText
+    private lateinit var resultTextView: TextView
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        studentDBHelper = StudentDBHelper(this)
+
+        // Initialize UI elements
+        rollNoEditText = findViewById(R.id.rollNoEditText)
+        nameEditText = findViewById(R.id.nameEditText)
+        genderEditText = findViewById(R.id.genderEditText)
+        marks1EditText = findViewById(R.id.marks1EditText)
+        marks2EditText = findViewById(R.id.marks2EditText)
+        marks3EditText = findViewById(R.id.marks3EditText)
+        searchNameEditText = findViewById(R.id.searchNameEditText)
+        resultTextView = findViewById(R.id.resultTextView)
+
+        insertButton = findViewById(R.id.insertButton)
+        searchButton = findViewById(R.id.searchButton)
+
+        // Insert student data
+        insertButton.setOnClickListener {
+            val rollNo = rollNoEditText.text.toString().toIntOrNull()
+            val name = nameEditText.text.toString()
+            val gender = genderEditText.text.toString()
+            val marks1 = marks1EditText.text.toString().toIntOrNull()
+            val marks2 = marks2EditText.text.toString().toIntOrNull()
+            val marks3 = marks3EditText.text.toString().toIntOrNull()
+
+            if (rollNo != null && marks1 != null && marks2 != null && marks3 != null) {
+                val result = studentDBHelper.insertStudent(rollNo, name, gender, marks1, marks2, marks3)
+                if (result == -1L) {
+                    Toast.makeText(this, "Error inserting data", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Data inserted successfully", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(this, "Please enter valid details", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Search for student by name
+        searchButton.setOnClickListener {
+            val name = searchNameEditText.text.toString()
+            if (name.isNotEmpty()) {
+                val cursor: Cursor = studentDBHelper.searchStudentByName(name)
+                if (cursor.count > 0) {
+                    cursor.moveToFirst()
+                    val rollNo = cursor.getInt(cursor.getColumnIndex("roll_no"))
+                    val gender = cursor.getString(cursor.getColumnIndex("gender"))
+                    val marks1 = cursor.getInt(cursor.getColumnIndex("marks_subject1"))
+                    val marks2 = cursor.getInt(cursor.getColumnIndex("marks_subject2"))
+                    val marks3 = cursor.getInt(cursor.getColumnIndex("marks_subject3"))
+
+                    resultTextView.text = """
+                        Roll No: $rollNo
+                        Name: $name
+                        Gender: $gender
+                        Marks: $marks1, $marks2, $marks3
+                    """.trimIndent()
+                } else {
+                    Toast.makeText(this, "No student found with that name", Toast.LENGTH_SHORT).show()
+                }
+                cursor.close()
+            } else {
+                Toast.makeText(this, "Please enter a name", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        studentDBHelper.close()
+    }
+}
+
+
+
+2.StudentDBHelper.kt:
+package com.example.studentdatabase
+
+import android.content.ContentValues
+import android.content.Context
+import android.database.Cursor
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteOpenHelper
+
+class StudentDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+
+    companion object {
+        const val DATABASE_NAME = "student_db"
+        const val DATABASE_VERSION = 1
+        const val TABLE_NAME = "students"
+        const val COLUMN_ROLL_NO = "roll_no"
+        const val COLUMN_NAME = "name"
+        const val COLUMN_GENDER = "gender"
+        const val COLUMN_MARKS_SUBJECT1 = "marks_subject1"
+        const val COLUMN_MARKS_SUBJECT2 = "marks_subject2"
+        const val COLUMN_MARKS_SUBJECT3 = "marks_subject3"
+    }
+
+    override fun onCreate(db: SQLiteDatabase) {
+        val CREATE_TABLE_QUERY = "CREATE TABLE $TABLE_NAME (" +
+                "$COLUMN_ROLL_NO INTEGER PRIMARY KEY," +
+                "$COLUMN_NAME TEXT," +
+                "$COLUMN_GENDER TEXT," +
+                "$COLUMN_MARKS_SUBJECT1 INTEGER," +
+                "$COLUMN_MARKS_SUBJECT2 INTEGER," +
+                "$COLUMN_MARKS_SUBJECT3 INTEGER)"
+        db.execSQL(CREATE_TABLE_QUERY)
+    }
+
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_NAME")
+        onCreate(db)
+    }
+
+    // Insert student data into the database
+    fun insertStudent(rollNo: Int, name: String, gender: String, marks1: Int, marks2: Int, marks3: Int): Long {
+        val db = writableDatabase
+        val contentValues = ContentValues()
+        contentValues.put(COLUMN_ROLL_NO, rollNo)
+        contentValues.put(COLUMN_NAME, name)
+        contentValues.put(COLUMN_GENDER, gender)
+        contentValues.put(COLUMN_MARKS_SUBJECT1, marks1)
+        contentValues.put(COLUMN_MARKS_SUBJECT2, marks2)
+        contentValues.put(COLUMN_MARKS_SUBJECT3, marks3)
+
+        return db.insert(TABLE_NAME, null, contentValues)
+    }
+
+    // Search for student by name
+    fun searchStudentByName(name: String): Cursor {
+        val db = readableDatabase
+        val query = "SELECT * FROM $TABLE_NAME WHERE $COLUMN_NAME LIKE ?"
+        return db.rawQuery(query, arrayOf("%$name%"))
+    }
+}
+
+
+
+activity_main.xml:
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Student Insert Section -->
+    <EditText
+        android:id="@+id/rollNoEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Roll No"
+        android:inputType="number" />
+
+    <EditText
+        android:id="@+id/nameEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Name" />
+
+    <EditText
+        android:id="@+id/genderEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Gender" />
+
+    <EditText
+        android:id="@+id/marks1EditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Marks in Subject 1"
+        android:inputType="number" />
+
+    <EditText
+        android:id="@+id/marks2EditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Marks in Subject 2"
+        android:inputType="number" />
+
+    <EditText
+        android:id="@+id/marks3EditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Marks in Subject 3"
+        android:inputType="number" />
+
+    <Button
+        android:id="@+id/insertButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Insert Student" />
+
+    <!-- Search Section -->
+    <EditText
+        android:id="@+id/searchNameEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Search by Name" />
+
+    <Button
+        android:id="@+id/searchButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Search Student" />
+
+    <TextView
+        android:id="@+id/resultTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Result will be shown here"
+        android:textSize="18sp"
+        android:layout_marginTop="16dp"/>
+</LinearLayout>

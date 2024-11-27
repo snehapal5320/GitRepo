@@ -1,0 +1,66 @@
+import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter REST API Demo',
+      home: ApiDemo(),
+    );
+  }
+}
+
+class ApiDemo extends StatefulWidget {
+  @override
+  _ApiDemoState createState() => _ApiDemoState();
+}
+
+class _ApiDemoState extends State<ApiDemo> {
+  List<dynamic> users = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUsers();
+  }
+
+  Future<void> fetchUsers() async {
+    final response =
+        await http.get(Uri.parse('https://jsonplaceholder.typicode.com/users'));
+    if (response.statusCode == 200) {
+      setState(() {
+        users = jsonDecode(response.body);
+      });
+    } else {
+      throw Exception('Failed to load users');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Users')),
+      body: users.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: users.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(users[index]['name']),
+                  subtitle: Text(users[index]['email']),
+                );
+              },
+            ),
+    );
+  }
+}
+
+

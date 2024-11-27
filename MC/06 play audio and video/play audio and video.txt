@@ -1,0 +1,115 @@
+activity_main.xml
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Audio Controls -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Audio Controls"
+        android:textSize="18sp"
+        android:paddingBottom="8dp" />
+
+    <Button
+        android:id="@+id/playAudioButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Play Audio" />
+
+    <Button
+        android:id="@+id/pauseAudioButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Pause Audio" />
+
+    <Button
+        android:id="@+id/stopAudioButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Stop Audio" />
+
+    <!-- Video Controls -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Video Playback"
+        android:textSize="18sp"
+        android:paddingTop="16dp"
+        android:paddingBottom="8dp" />
+
+    <VideoView
+        android:id="@+id/videoView"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/playVideoButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Play Video" />
+</LinearLayout>
+
+
+MediaHandler.kt
+import android.content.Context
+import android.media.MediaPlayer
+import android.net.Uri
+import android.widget.VideoView
+
+class MediaHandler(private val context: Context) {
+    private var mediaPlayer: MediaPlayer? = null
+    private var videoView: VideoView? = null
+
+    // Initialize for Audio
+    fun initAudio(resourceId: Int) {
+        release()
+        mediaPlayer = MediaPlayer.create(context, resourceId)
+    }
+
+    // Initialize for Video
+    fun initVideo(videoView: VideoView, videoUri: Uri) {
+        release()
+        this.videoView = videoView
+        videoView.setVideoURI(videoUri)
+    }
+
+    // Play Media
+    fun play() {
+        mediaPlayer?.start()
+        videoView?.start()
+    }
+
+    // Pause Media
+    fun pause() {
+        mediaPlayer?.pause()
+        videoView?.pause()
+    }
+
+    // Stop Media
+    fun stop() {
+        mediaPlayer?.let {
+            if (it.isPlaying) {
+                it.stop()
+                it.prepare() // Reset media player state
+            }
+        }
+        videoView?.stopPlayback()
+    }
+
+    // Release Resources
+    fun release() {
+        mediaPlayer?.release()
+        mediaPlayer = null
+        videoView = null
+    }
+
+    // Check if Media is Playing
+    fun isPlaying(): Boolean {
+        return mediaPlayer?.isPlaying == true || (videoView?.isPlaying ?: false)
+    }
+}

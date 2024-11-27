@@ -1,0 +1,98 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/amountEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter amount"
+        android:inputType="numberDecimal" />
+
+    <Spinner
+        android:id="@+id/fromSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Spinner
+        android:id="@+id/toSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/convertButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Convert" />
+
+    <TextView
+        android:id="@+id/resultTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:paddingTop="16dp"
+        android:text="Converted amount will appear here" />
+
+</LinearLayout>
+
+
+
+
+main_activity.kt
+package com.example.currencyconverter
+
+import android.os.Bundle
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+
+class MainActivity : AppCompatActivity() {
+    private val currencyRates = mapOf(
+        "USD" to 1.0,
+        "EUR" to 0.9,
+        "INR" to 74.0,
+        "JPY" to 110.0,
+        "GBP" to 0.75
+    )
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        val amountEditText = findViewById<EditText>(R.id.amountEditText)
+        val fromSpinner = findViewById<Spinner>(R.id.fromSpinner)
+        val toSpinner = findViewById<Spinner>(R.id.toSpinner)
+        val convertButton = findViewById<Button>(R.id.convertButton)
+        val resultTextView = findViewById<TextView>(R.id.resultTextView)
+
+        // Currency options
+        val currencies = currencyRates.keys.toList()
+
+        // Set up the spinners
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, currencies)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        fromSpinner.adapter = adapter
+        toSpinner.adapter = adapter
+
+        // Set convert button click listener
+        convertButton.setOnClickListener {
+            val amountText = amountEditText.text.toString()
+            if (amountText.isEmpty()) {
+                Toast.makeText(this, "Enter an amount", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val fromCurrency = fromSpinner.selectedItem.toString()
+            val toCurrency = toSpinner.selectedItem.toString()
+            val amount = amountText.toDouble()
+
+            val fromRate = currencyRates[fromCurrency] ?: 1.0
+            val toRate = currencyRates[toCurrency] ?: 1.0
+
+            val convertedAmount = (amount / fromRate) * toRate
+            resultTextView.text = String.format("%.2f %s", convertedAmount, toCurrency)
+        }
+    }
+}
